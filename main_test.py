@@ -1,8 +1,11 @@
+import random
+
 import numpy as np
 import torch
 
 from run.run_evaluate import run_test
 
+random.seed(1)
 torch.manual_seed(1)
 np.random.seed(1)
 

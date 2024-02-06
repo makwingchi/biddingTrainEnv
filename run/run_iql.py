@@ -1,7 +1,8 @@
+import random
 import numpy as np
 import torch
 import logging
-from bidding_train_env.dataloader.iql_dataloader import IqlDataLoader
+from bidding_train_env.dataloader.iql_agent_onehot_dataloader import IqlDataLoader
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.iql.replay_buffer import ReplayBuffer
 from bidding_train_env.baseline.iql.iql import IQL
@@ -11,7 +12,11 @@ logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16
+STATE_DIM = 16 + 6
+
+random.seed(1)
+torch.manual_seed(1)
+np.random.seed(1)
 
 
 def train_iql_model():
@@ -19,13 +24,13 @@ def train_iql_model():
     Train the IQL model.
     """
     # Normalize training data
-    data_loader = IqlDataLoader(file_path='./data/log.csv', read_optimization=True)
+    data_loader = IqlDataLoader(file_path='./data/log.csv', read_optimization=False)
     training_data = data_loader.training_data
 
     is_normalize = True
     normalize_dic = None
     if is_normalize:
-        normalize_dic = normalize_state(training_data, STATE_DIM, normalize_indices=[13, 14, 15])
+        normalize_dic = normalize_state(training_data, STATE_DIM, normalize_indices=[19, 20, 21])
         training_data['reward'] = normalize_reward(training_data)
         save_normalize_dict(normalize_dic, "saved_model/IQLtest")
 
@@ -57,11 +62,13 @@ def add_to_replay_buffer(replay_buffer, training_data, is_normalize):
                                np.array([done]))
 
 
-def train_model_steps(model, replay_buffer, step_num=10000, batch_size=256):
+def train_model_steps(model, replay_buffer, step_num=20000, batch_size=100):
     for i in range(step_num):
         states, actions, rewards, next_states, terminals = replay_buffer.sample(batch_size)
         q_loss, v_loss, a_loss = model.step(states, actions, rewards, next_states, terminals)
-        logger.info(f'Step: {i} Q_loss: {q_loss} V_loss: {v_loss} A_loss: {a_loss}')
+
+        if i % 1000 == 0:
+            logger.info(f'Step: {i} Q_loss: {q_loss} V_loss: {v_loss} A_loss: {a_loss}')
 
 
 def test_trained_model(model, test_state):

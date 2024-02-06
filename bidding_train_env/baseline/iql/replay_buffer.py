@@ -3,6 +3,10 @@ from collections import namedtuple, deque
 import numpy as np
 import torch
 
+random.seed(1)
+torch.manual_seed(1)
+np.random.seed(1)
+
 # 定义一个命名元组来存储经验
 Experience = namedtuple("Experience", field_names=["state", "action", "reward", "next_state", "done"])
 

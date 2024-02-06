@@ -1,11 +1,16 @@
+import os
+import random
+from copy import deepcopy
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
-import numpy as np
-import torch
-from copy import deepcopy
-import os
 from torch.distributions import Normal
+
+random.seed(1)
+torch.manual_seed(1)
+np.random.seed(1)
 
 
 class Q(nn.Module):
