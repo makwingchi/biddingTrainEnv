@@ -142,6 +142,10 @@ class IqlDataLoader:
 
                 # 计算该tick的reward
                 reward = current_tick_data[current_tick_data['status'] == 1]['Reward'].sum()
+                cost = current_tick_data[current_tick_data['status'] == 1]['cost'].sum()
+                cost_coef = 0.5
+
+                reward -= cost_coef * cost
 
                 # 计算done
                 tickNum = 23
