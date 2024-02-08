@@ -144,7 +144,6 @@ class IQL:
         '''
         训练网络
         '''
-
         self.value_optimizer.zero_grad()
         value_loss = self.calc_value_loss(states, actions)
         value_loss.backward()

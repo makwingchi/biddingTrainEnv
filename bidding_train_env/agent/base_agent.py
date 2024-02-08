@@ -6,7 +6,7 @@ class BaseAgent(ABC):
     基础出价智能体接口，定义了需要被实现的方法。
     """
 
-    def __init__(self, budget=100, name="BaseAgent", cpa=2,category=0):
+    def __init__(self, budget=100, name="BaseAgent", cpa=2, category=0):
         """
         初始化出价智能体。
         :param budget: 广告主总预算
