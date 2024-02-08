@@ -72,11 +72,10 @@ class IqlDataLoader:
         training_data_rows = []
         # 遍历每个episode和agentIndex
         for (episode, agentIndex), group in df.groupby(['episode', 'agentIndex']):
-            # agent category one hot encoding
-            ohe = [0, 0, 0, 0, 0, 0]
-            idx = int(agentIndex % 6)
-            ohe[idx] = 1
-            ohe = tuple(ohe)
+            # budget category one hot encoding
+            budget_category = [0, 0, 0, 0, 0, 0]
+            budget_category[int(agentIndex % 6)] = 1
+            budget_category = tuple(budget_category)
 
             # 按照tick排序
             group = group.sort_values('tick')
@@ -123,6 +122,12 @@ class IqlDataLoader:
                 timeleft = (24 - tick) / 24
                 bgtleft = remainingBudget / budget if budget > 0 else 0
 
+                # agent category
+                # agent_category = [0, 0, 0, 0, 0]
+                # agent_category_idx = current_tick_data['agentCategory'].iloc[0]
+                # agent_category[int(agent_category_idx)] = 1
+                # agent_category = tuple(agent_category)
+
                 # 从current_tick_data获取当前tick的特征
                 current_tick_data.fillna(0, inplace=True)
                 state_features = current_tick_data.iloc[0].to_dict()
@@ -148,7 +153,7 @@ class IqlDataLoader:
                     state_features['historical_volume']
                 )
 
-                state = ohe + state
+                state = budget_category + state
 
                 # 计算该tick的action
                 total_bid = current_tick_data['bid'].sum()
@@ -158,7 +163,7 @@ class IqlDataLoader:
                 # 计算该tick的reward
                 reward = current_tick_data[current_tick_data['status'] == 1]['Reward'].sum()
                 cost = current_tick_data[current_tick_data['status'] == 1]['cost'].sum()
-                cost_coef = 0.5
+                cost_coef = 0
 
                 reward -= cost_coef * cost
 

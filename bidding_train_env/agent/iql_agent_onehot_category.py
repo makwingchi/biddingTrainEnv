@@ -15,7 +15,7 @@ class IqlAgent(BaseAgent):
     """
 
     def __init__(self, budget=100, name="Iql-PlayerAgent", cpa=2, category=0):
-        super().__init__(budget, name, cpa,category)
+        super().__init__(budget, name, cpa, category)
 
         # 模型加载
         self.model = IQL(dim_obs=16)
@@ -44,10 +44,14 @@ class IqlAgent(BaseAgent):
         :param history_market_price: 该出价智能体历史tick的流量市场价格
         :return: numpy.ndarray of bid values
         """
+        # budget category one hot encoding
+        budget_category = [0, 0, 0, 0, 0, 0]
+        budget_category_idx = int(budget // 300 - 5)
+        budget_category[budget_category_idx] = 1
+
         # agent category one hot encoding
-        ohe = [0, 0, 0, 0, 0, 0]
-        idx = int(budget // 300 - 5)
-        ohe[idx] = 1
+        agent_category = [0, 0, 0, 0, 0]
+        agent_category[int(self.category)] = 1
 
         time_left = (24 - tick_index) / 24
         budget_left = remaining_budget / budget if budget > 0 else 0
@@ -93,7 +97,7 @@ class IqlAgent(BaseAgent):
             current_pv_num, last_three_pv_num_total, historical_pv_num_total
         ])
 
-        test_state = np.concatenate((ohe, test_state))
+        test_state = np.concatenate((budget_category, agent_category, test_state))
 
         def normalize(value, min_value, max_value):
             return (value - min_value) / (max_value - min_value) if max_value > min_value else 0
