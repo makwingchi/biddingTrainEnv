@@ -41,8 +41,9 @@ def run_test():
         logger.info(f'Running (episode, agentIndex): ({key[0]}, {key[1]})')
 
         curr_budget = 1500 + 300 * (curr_agent_idx % 6)
+        curr_agent_category = curr_agent_idx // 6
 
-        agent = PlayerAgent(budget=curr_budget)
+        agent = PlayerAgent(budget=curr_budget, category=curr_agent_category)
 
         num_tick, market_prices, pvalues = data_loader.mock_data(key)
         rewards = np.zeros(num_tick)

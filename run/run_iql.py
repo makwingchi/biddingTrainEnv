@@ -2,17 +2,17 @@ import random
 import numpy as np
 import torch
 import logging
-from bidding_train_env.dataloader.iql_agent_onehot_dataloader import IqlDataLoader
+from bidding_train_env.dataloader.iql_emb_dataloader import IqlDataLoader
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.iql.replay_buffer import ReplayBuffer
-from bidding_train_env.baseline.iql.iql import IQL
+from bidding_train_env.baseline.iql.iql_emb import IQL
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16 + 6
+STATE_DIM = 16 + 1
 
 random.seed(1)
 torch.manual_seed(1)
@@ -30,9 +30,15 @@ def train_iql_model():
     is_normalize = True
     normalize_dic = None
     if is_normalize:
-        normalize_dic = normalize_state(training_data, STATE_DIM, normalize_indices=[19, 20, 21])
+        normalize_dic = normalize_state(
+            training_data,
+            STATE_DIM,
+            normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1]
+        )
         training_data['reward'] = normalize_reward(training_data)
         save_normalize_dict(normalize_dic, "saved_model/IQLtest")
+
+    print(training_data.loc[2000].to_dict())
 
     # Build replay buffer
     replay_buffer = ReplayBuffer()
@@ -40,14 +46,16 @@ def train_iql_model():
 
     # Train model
     model = IQL(dim_obs=STATE_DIM)
+    print(model.budget_embedding.state_dict())
     train_model_steps(model, replay_buffer)
+    print(model.budget_embedding.state_dict())
 
     # Save model
     model.save_net("saved_model/IQLtest")
 
     # Test trained model
-    test_state = np.ones(STATE_DIM)
-    test_trained_model(model, test_state)
+    # test_state = np.ones(STATE_DIM)
+    # test_trained_model(model, test_state)
 
 
 def add_to_replay_buffer(replay_buffer, training_data, is_normalize):
