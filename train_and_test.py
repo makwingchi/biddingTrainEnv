@@ -7,17 +7,35 @@ from run.run_evaluate import run_test
 
 
 if __name__ == "__main__":
-    rewards = []
+    import argparse
 
-    for episode in range(7):
-        training_data, test_data = run_iql(episode=episode, val_mode=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--test", help="whether it is test mode or not", default="1")
 
-        with open('./data/raw_data.pickle', 'wb') as file:
-            pickle.dump(test_data, file)
+    args = parser.parse_args()
+    curr_mode = int(args.test)
 
-        episodic_reward = run_test()
+    a = f"# You are in {'test' if curr_mode == 1 else 'train'} mode. #"
+    b = "#" * len(a)
 
-        rewards.append(episodic_reward)
+    print(b)
+    print(a)
+    print(b)
 
-    print(f"all episodic rewards: {rewards}")
-    print(f"mean of rewards: {np.mean(rewards)}")
+    if curr_mode == 1:
+        rewards = []
+
+        for episode in range(7):
+            training_data, test_data = run_iql(episode=episode, val_mode=True)
+
+            with open('./data/raw_data.pickle', 'wb') as file:
+                pickle.dump(test_data, file)
+
+            episodic_reward = run_test()
+
+            rewards.append(episodic_reward)
+
+        print(f"all episodic rewards: {rewards}")
+        print(f"mean of rewards: {np.mean(rewards)}")
+    else:
+        run_iql(0, val_mode=False)
