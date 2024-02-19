@@ -261,7 +261,7 @@ class IQL:
             self.actors.cuda()
             self.critic1_target.cuda()
             self.critic2_target.cuda()
-        print("model stored path " + next(self.critic1.parameters()).device.type)
+        # print("model stored path " + next(self.critic1.parameters()).device.type)
 
     def l2_loss(self, diff, expectile=0.8):
         weight = torch.where(diff > 0, expectile, (1 - expectile))
