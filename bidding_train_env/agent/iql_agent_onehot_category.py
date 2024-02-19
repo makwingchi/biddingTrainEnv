@@ -124,12 +124,12 @@ class IqlAgent(BaseAgent):
 
         test_state = np.array([
             time_left, budget_left,
-            budget_consumption_rate, cost_per_mille, prev_win_rate,
+            #budget_consumption_rate, cost_per_mille, prev_win_rate,
             historical_bid_mean, last_three_bid_mean,
             historical_market_price_mean, historical_pv_values_mean, historical_reward_mean,
             historical_status_mean, last_three_market_price_mean, last_three_pv_values_mean,
             last_three_reward_mean, last_three_status_mean, current_pv_values_mean,
-            current_pv_num, last_three_pv_num_total, historical_pv_num_total, prev_total_value
+            current_pv_num, last_three_pv_num_total, historical_pv_num_total
         ])
 
         test_state = np.concatenate((budget_category, test_state))

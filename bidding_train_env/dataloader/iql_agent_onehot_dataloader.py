@@ -164,7 +164,7 @@ class IqlDataLoader:
                 #           当前tick平均流量价值，当前tick流量个数，前三个tick流量总个数，历史流量总个数)
                 state = (
                     timeleft, bgtleft,
-                    budget_consumption_rate, cost_per_mille, prev_win_rate,
+                    #budget_consumption_rate, cost_per_mille, prev_win_rate,
                     state_features['avg_bid_all'],
                     state_features['avg_bid_last_3'],
                     state_features['avg_marketPrice_all'],
@@ -178,8 +178,7 @@ class IqlDataLoader:
                     state_features['pvValue_agg'],
                     state_features['tick_volume_agg'],
                     state_features['last_3_ticks_volume'],
-                    state_features['historical_volume'],
-                    prev_total_value
+                    state_features['historical_volume']
                 )
 
                 state = budget_category + state

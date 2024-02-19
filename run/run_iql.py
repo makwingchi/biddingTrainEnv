@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16 + 4 + 6
+STATE_DIM = 16 + 6
 
 random.seed(1)
 torch.manual_seed(1)
@@ -39,7 +39,7 @@ def train_iql_model(episode=0, val_mode=False):
         normalize_dic = normalize_state(
             training_data,
             STATE_DIM,
-            normalize_indices=[STATE_DIM-4, STATE_DIM-3, STATE_DIM-2, STATE_DIM-1]
+            normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1]
         )
         training_data['reward'] = normalize_reward(training_data)
         save_normalize_dict(normalize_dic, "saved_model/IQLtest")
