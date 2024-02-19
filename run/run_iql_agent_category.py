@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import logging
-from bidding_train_env.dataloader.iql_dataloader import IqlDataLoader
+from bidding_train_env.dataloader.iql_agent_onehot_dataloader import IqlDataLoader
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.iql.replay_buffer import ReplayBuffer
 from bidding_train_env.baseline.iql.iql import IQL
@@ -11,7 +11,7 @@ logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16
+STATE_DIM = 16 + 5
 
 
 def train_iql_model():
@@ -32,12 +32,12 @@ def train_iql_model():
     is_normalize = True
     normalize_dic = None
     if is_normalize:
-        normalize_dic1 = normalize_state(training_data1, STATE_DIM, normalize_indices=[13, 14, 15])
-        normalize_dic2 = normalize_state(training_data2, STATE_DIM, normalize_indices=[13, 14, 15])
-        normalize_dic3 = normalize_state(training_data3, STATE_DIM, normalize_indices=[13, 14, 15])
-        normalize_dic4 = normalize_state(training_data4, STATE_DIM, normalize_indices=[13, 14, 15])
-        normalize_dic5 = normalize_state(training_data5, STATE_DIM, normalize_indices=[13, 14, 15])
-        normalize_dic6 = normalize_state(training_data6, STATE_DIM, normalize_indices=[13, 14, 15])
+        normalize_dic1 = normalize_state(training_data1, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
+        normalize_dic2 = normalize_state(training_data2, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
+        normalize_dic3 = normalize_state(training_data3, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
+        normalize_dic4 = normalize_state(training_data4, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
+        normalize_dic5 = normalize_state(training_data5, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
+        normalize_dic6 = normalize_state(training_data6, STATE_DIM, normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1])
 
         training_data1['reward'] = normalize_reward(training_data1)
         training_data2['reward'] = normalize_reward(training_data2)
@@ -52,6 +52,8 @@ def train_iql_model():
         save_normalize_dict(normalize_dic4, "saved_model/IQLtest4")
         save_normalize_dict(normalize_dic5, "saved_model/IQLtest5")
         save_normalize_dict(normalize_dic6, "saved_model/IQLtest6")
+
+    print(training_data1.loc[20].to_dict())
 
     # Build replay buffer
     replay_buffer1 = ReplayBuffer()
@@ -114,7 +116,9 @@ def train_model_steps(model, replay_buffer, step_num=20000, batch_size=100):
     for i in range(step_num):
         states, actions, rewards, next_states, terminals = replay_buffer.sample(batch_size)
         q_loss, v_loss, a_loss = model.step(states, actions, rewards, next_states, terminals)
-        logger.info(f'Step: {i} Q_loss: {q_loss} V_loss: {v_loss} A_loss: {a_loss}')
+
+        if i % 1000 == 0:
+            logger.info(f'Step: {i} Q_loss: {q_loss} V_loss: {v_loss} A_loss: {a_loss}')
 
 
 def test_trained_model(model, test_state):
