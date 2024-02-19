@@ -2,30 +2,36 @@ import random
 import numpy as np
 import torch
 import logging
-from bidding_train_env.dataloader.iql_emb_dataloader import IqlDataLoader
+from bidding_train_env.dataloader.iql_agent_onehot_dataloader import IqlDataLoader
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.iql.replay_buffer import ReplayBuffer
-from bidding_train_env.baseline.iql.iql_emb import IQL
+from bidding_train_env.baseline.iql.iql import IQL
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
                     format="[%(asctime)s] [%(name)s] [%(filename)s(%(lineno)d)] [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
-STATE_DIM = 16 + 1
+STATE_DIM = 16 + 4 + 6
 
 random.seed(1)
 torch.manual_seed(1)
 np.random.seed(1)
 
 
-def train_iql_model():
+def train_iql_model(episode=0, val_mode=False):
     """
     Train the IQL model.
     """
     # Normalize training data
     data_loader = IqlDataLoader(file_path='./data/log.csv', read_optimization=False)
-    training_data = data_loader.training_data
+
+    if not val_mode:
+        training_data = data_loader.training_data
+        test_data = None
+    else:
+        training_data = data_loader.training_data[~data_loader.training_data["episode"].eq(episode)].reset_index(drop=True)
+        test_data = data_loader.raw_data[data_loader.raw_data["episode"].eq(episode)].reset_index(drop=True)
 
     is_normalize = True
     normalize_dic = None
@@ -33,7 +39,7 @@ def train_iql_model():
         normalize_dic = normalize_state(
             training_data,
             STATE_DIM,
-            normalize_indices=[STATE_DIM-3, STATE_DIM-2, STATE_DIM-1]
+            normalize_indices=[STATE_DIM-4, STATE_DIM-3, STATE_DIM-2, STATE_DIM-1]
         )
         training_data['reward'] = normalize_reward(training_data)
         save_normalize_dict(normalize_dic, "saved_model/IQLtest")
@@ -46,9 +52,7 @@ def train_iql_model():
 
     # Train model
     model = IQL(dim_obs=STATE_DIM)
-    print(model.budget_embedding.state_dict())
     train_model_steps(model, replay_buffer)
-    print(model.budget_embedding.state_dict())
 
     # Save model
     model.save_net("saved_model/IQLtest")
@@ -56,6 +60,8 @@ def train_iql_model():
     # Test trained model
     # test_state = np.ones(STATE_DIM)
     # test_trained_model(model, test_state)
+
+    return training_data, test_data
 
 
 def add_to_replay_buffer(replay_buffer, training_data, is_normalize):
@@ -85,12 +91,15 @@ def test_trained_model(model, test_state):
     logger.info(f"Test action: {action}")
 
 
-def run_iql():
+def run_iql(episode, val_mode):
     """
     Run IQL model training and evaluation.
     """
-    train_iql_model()
+    return train_iql_model(episode, val_mode)
 
 
 if __name__ == '__main__':
-    run_iql()
+    curr_episode = 0
+    curr_val_mode = True
+
+    run_iql(episode=curr_episode, val_mode=curr_val_mode)

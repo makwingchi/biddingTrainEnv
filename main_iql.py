@@ -2,9 +2,10 @@ import random
 import numpy as np
 import torch
 
-# from run.run_iql import run_iql
+from run.run_iql import run_iql
 # from run.run_iql_agent_category import run_iql
-from run.run_iql_agent_category_separate import run_iql
+# from run.run_iql_agent_category_separate import run_iql
+# from run.run_iql_budget_category_separate import run_iql
 
 random.seed(1)
 torch.manual_seed(1)

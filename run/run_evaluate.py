@@ -102,7 +102,9 @@ def run_test():
 
     sum_of_rewards = sum(list(total_rewards.values()))
     print(f"total rewards: {sum_of_rewards}")
-    print(f"score of log.csv: {sum_of_rewards / 700000}")
+    # print(f"score of log.csv: {sum_of_rewards / 700000}")
+
+    return sum_of_rewards
 
 
 if __name__ == '__main__':
