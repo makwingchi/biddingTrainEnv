@@ -88,6 +88,10 @@ class IqlAgent(BaseAgent):
         curr_model = model_selection[int(budget)]
         curr_normalize_dict = normalize_dict_selection[int(budget)]
 
+        # agent category one hot encoding
+        agent_category = [0, 0, 0, 0, 0]
+        agent_category[int(self.category)] = 1
+
         time_left = (24 - tick_index) / 24
         budget_left = remaining_budget / budget if budget > 0 else 0
 
@@ -131,6 +135,8 @@ class IqlAgent(BaseAgent):
             last_three_reward_mean, last_three_status_mean, current_pv_values_mean,
             current_pv_num, last_three_pv_num_total, historical_pv_num_total
         ])
+
+        test_state = np.concatenate((agent_category, test_state))
 
         def normalize(value, min_value, max_value):
             return (value - min_value) / (max_value - min_value) if max_value > min_value else 0
