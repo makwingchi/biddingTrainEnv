@@ -25,6 +25,8 @@ class IqlAgent(BaseAgent):
         with open('./saved_model/IQLtest/normalize_dict.pkl', 'rb') as file:
             self.normalize_dict = pickle.load(file)
 
+        self.remaining_budgets = []
+
     def reset(self):
         self.remaining_budget = self.budget
 
@@ -44,14 +46,45 @@ class IqlAgent(BaseAgent):
         :param history_market_price: 该出价智能体历史tick的流量市场价格
         :return: numpy.ndarray of bid values
         """
+        # budget consumption rate
+        if len(self.remaining_budgets) == 0:
+            budget_consumption_rate = 0
+        else:
+            budget_consumption_rate = (self.remaining_budgets[-1] - remaining_budget) / self.remaining_budgets[-1]
+
+        # cost per mille & total value of winning impressions
+        if len(history_pv_values) == 0:
+            cost_per_mille = 0
+            prev_total_value = 0
+        else:
+            prev_cost = self.remaining_budgets[-1] - remaining_budget
+            prev_pv_values = np.array(history_pv_values[-1])
+            prev_status = np.array(history_status[-1])
+            prev_total_value = np.sum(prev_pv_values * prev_status)
+
+            cost_per_mille = prev_cost / prev_total_value if prev_total_value > 0 else 0
+
+        # auction win rate
+        if len(history_status) == 0:
+            prev_win_rate = 0
+        else:
+            prev_win_rate = np.mean(np.array(history_status[-1]))
+
+        # print(f"budget_consumption_rate={budget_consumption_rate}")
+        # print(f"cost_per_mille={cost_per_mille}")
+        # print(f"prev_total_value={prev_total_value}")
+        # print(f"prev_win_rate={prev_win_rate}")
+
+        self.remaining_budgets.append(remaining_budget)
+
         # budget category one hot encoding
         budget_category = [0, 0, 0, 0, 0, 0]
         budget_category_idx = int(budget // 300 - 5)
         budget_category[budget_category_idx] = 1
 
         # agent category one hot encoding
-        agent_category = [0, 0, 0, 0, 0]
-        agent_category[int(self.category)] = 1
+        # agent_category = [0, 0, 0, 0, 0]
+        # agent_category[int(self.category)] = 1
 
         time_left = (24 - tick_index) / 24
         budget_left = remaining_budget / budget if budget > 0 else 0
@@ -90,14 +123,16 @@ class IqlAgent(BaseAgent):
             len(history_bid[i]) for i in range(max(0, tick_index - 3), tick_index)) if history_bid else 0
 
         test_state = np.array([
-            time_left, budget_left, historical_bid_mean, last_three_bid_mean,
+            time_left, budget_left,
+            budget_consumption_rate, cost_per_mille, prev_win_rate,
+            historical_bid_mean, last_three_bid_mean,
             historical_market_price_mean, historical_pv_values_mean, historical_reward_mean,
             historical_status_mean, last_three_market_price_mean, last_three_pv_values_mean,
             last_three_reward_mean, last_three_status_mean, current_pv_values_mean,
-            current_pv_num, last_three_pv_num_total, historical_pv_num_total
+            current_pv_num, last_three_pv_num_total, historical_pv_num_total, prev_total_value
         ])
 
-        test_state = np.concatenate((budget_category, agent_category, test_state))
+        test_state = np.concatenate((budget_category, test_state))
 
         def normalize(value, min_value, max_value):
             return (value - min_value) / (max_value - min_value) if max_value > min_value else 0

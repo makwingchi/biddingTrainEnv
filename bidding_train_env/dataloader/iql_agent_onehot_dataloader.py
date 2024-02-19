@@ -115,6 +115,33 @@ class IqlDataLoader:
             # 遍历每个tick
             for tick in group['tick'].unique():
                 current_tick_data = group[group['tick'] == tick]
+                prev_tick_data = group[group['tick'] == (tick - 1)]
+
+                # print(prev_tick_data[["episode", "tick", "agentIndex", "budget", "status"]])
+                # print(prev_tick_data.columns)
+                # print(np.mean(np.array(prev_tick_data['status'].to_list())))
+
+                if prev_tick_data.shape[0] == 0:
+                    budget_consumption_rate = 0
+                    cost_per_mille = 0
+                    prev_win_rate = 0
+                    prev_total_value = 0
+                else:
+                    prev_budget = prev_tick_data['remainingBudget'].iloc[0]
+                    curr_budget = current_tick_data['remainingBudget'].iloc[0]
+                    budget_consumption_rate = (prev_budget - curr_budget) / prev_budget
+
+                    prev_status = np.array(prev_tick_data['status'].to_list())
+                    prev_pv_values = np.array(prev_tick_data['pvValue'].to_list())
+                    prev_total_value = np.sum(prev_pv_values * prev_status)
+
+                    cost_per_mille = (prev_budget - curr_budget) / prev_total_value if prev_total_value > 0 else 0
+                    prev_win_rate = np.mean(prev_status)
+
+                # print(f"budget_consumption_rate={budget_consumption_rate}")
+                # print(f"cost_per_mille={cost_per_mille}")
+                # print(f"prev_total_value={prev_total_value}")
+                # print(f"prev_win_rate={prev_win_rate}")
 
                 # 计算state
                 budget = current_tick_data['budget'].iloc[0]
@@ -137,6 +164,7 @@ class IqlDataLoader:
                 #           当前tick平均流量价值，当前tick流量个数，前三个tick流量总个数，历史流量总个数)
                 state = (
                     timeleft, bgtleft,
+                    budget_consumption_rate, cost_per_mille, prev_win_rate,
                     state_features['avg_bid_all'],
                     state_features['avg_bid_last_3'],
                     state_features['avg_marketPrice_all'],
@@ -150,7 +178,8 @@ class IqlDataLoader:
                     state_features['pvValue_agg'],
                     state_features['tick_volume_agg'],
                     state_features['last_3_ticks_volume'],
-                    state_features['historical_volume']
+                    state_features['historical_volume'],
+                    prev_total_value
                 )
 
                 state = budget_category + state
@@ -163,7 +192,7 @@ class IqlDataLoader:
                 # 计算该tick的reward
                 reward = current_tick_data[current_tick_data['status'] == 1]['Reward'].sum()
                 cost = current_tick_data[current_tick_data['status'] == 1]['cost'].sum()
-                cost_coef = 0
+                cost_coef = 0.25
 
                 reward -= cost_coef * cost
 
