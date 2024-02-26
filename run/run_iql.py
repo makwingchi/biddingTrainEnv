@@ -1,11 +1,14 @@
 import random
 import numpy as np
+import pandas as pd
 import torch
 import logging
 from bidding_train_env.dataloader.iql_agent_onehot_dataloader import IqlDataLoader
 from bidding_train_env.common.utils import normalize_state, normalize_reward, save_normalize_dict
 from bidding_train_env.baseline.iql.replay_buffer import ReplayBuffer
 from bidding_train_env.baseline.iql.iql import IQL
+# from bidding_train_env.baseline.cql.cql import CQL as IQL
+# from bidding_train_env.baseline.edac.edac import EDAC as IQL
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,
@@ -28,9 +31,20 @@ def train_iql_model(episode=0, val_mode=False):
 
     if not val_mode:
         training_data = data_loader.training_data
+        augmented_training_data = (
+            data_loader.training_data
+            .loc[data_loader.training_data["episode"].isin([0, 2, 5])]
+            .reset_index(drop=True)
+        )
+        training_data = pd.concat([training_data, augmented_training_data], ignore_index=True)
+
         test_data = None
     else:
-        training_data = data_loader.training_data[~data_loader.training_data["episode"].eq(episode)].reset_index(drop=True)
+        training_data = (
+            data_loader.training_data
+            .loc[~data_loader.training_data["episode"].eq(episode)]
+            .reset_index(drop=True)
+        )
         test_data = data_loader.raw_data[data_loader.raw_data["episode"].eq(episode)].reset_index(drop=True)
 
     is_normalize = True
@@ -80,9 +94,13 @@ def train_model_steps(model, replay_buffer, step_num=20000, batch_size=100):
     for i in range(step_num):
         states, actions, rewards, next_states, terminals = replay_buffer.sample(batch_size)
         q_loss, v_loss, a_loss = model.step(states, actions, rewards, next_states, terminals)
+        # q1_loss, q2_loss, a_loss = model.step(states, actions, rewards, next_states, terminals)
+        # update_info = model.step(states, actions, rewards, next_states, terminals)
 
         if i % 1000 == 0:
             logger.info(f'Step: {i} Q_loss: {q_loss} V_loss: {v_loss} A_loss: {a_loss}')
+            # logger.info(f'Step: {i} Q1_loss: {q1_loss} Q2_loss: {q2_loss} A_loss: {a_loss}')
+            # logger.info(f'Step: {i} actor_loss: {update_info["actor_loss"]} critic_loss: {update_info["critic_loss"]} alpha_loss: {update_info["alpha_loss"]}')
 
 
 def test_trained_model(model, test_state):
