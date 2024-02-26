@@ -4,6 +4,8 @@ import pickle
 
 from bidding_train_env.agent.base_agent import BaseAgent
 from bidding_train_env.baseline.iql.iql import IQL
+# from bidding_train_env.baseline.edac.edac import EDAC as IQL
+# from bidding_train_env.baseline.cql.cql import CQL as IQL
 
 torch.manual_seed(1)
 np.random.seed(1)
@@ -91,15 +93,43 @@ class IqlAgent(BaseAgent):
 
         # 计算历史状态的均值
         historical_status_mean = np.mean([np.mean(status) for status in history_status]) if history_status else 0
+        # historical_status_min = np.min([np.mean(status) for status in history_status]) if history_status else 0
+        # historical_status_max = np.max([np.mean(status) for status in history_status]) if history_status else 0
+        prev_status1 = np.mean(history_status[-1]) if len(history_status) >= 1 else 0
+        prev_status2 = np.mean(history_status[-2]) if len(history_status) >= 2 else 0
+        prev_status3 = np.mean(history_status[-3]) if len(history_status) >= 3 else 0
+
         # 计算历史回报的均值
         historical_reward_mean = np.mean([np.mean(reward) for reward in history_reward]) if history_reward else 0
+        # historical_reward_min = np.min([np.mean(reward) for reward in history_reward]) if history_reward else 0
+        # historical_reward_max = np.max([np.mean(reward) for reward in history_reward]) if history_reward else 0
+        prev_reward1 = np.mean(history_reward[-1]) if len(history_reward) >= 1 else 0
+        prev_reward2 = np.mean(history_reward[-2]) if len(history_reward) >= 2 else 0
+        prev_reward3 = np.mean(history_reward[-3]) if len(history_reward) >= 3 else 0
+
         # 计算历史市场价格的均值
-        historical_market_price_mean = np.mean(
-            [np.mean(price) for price in history_market_price]) if history_market_price else 0
+        historical_market_price_mean = np.mean([np.mean(price) for price in history_market_price]) if history_market_price else 0
+        # historical_market_price_min = np.min([np.mean(price) for price in history_market_price]) if history_market_price else 0
+        # historical_market_price_max = np.max([np.mean(price) for price in history_market_price]) if history_market_price else 0
+        prev_market_price1 = np.mean(history_market_price[-1]) if len(history_market_price) >= 1 else 0
+        prev_market_price2 = np.mean(history_market_price[-2]) if len(history_market_price) >= 2 else 0
+        prev_market_price3 = np.mean(history_market_price[-3]) if len(history_market_price) >= 3 else 0
+
         # 计算历史pvValue的均值
         historical_pv_values_mean = np.mean([np.mean(value) for value in history_pv_values]) if history_pv_values else 0
+        # historical_pv_values_min = np.min([np.mean(value) for value in history_pv_values]) if history_pv_values else 0
+        # historical_pv_values_max = np.max([np.mean(value) for value in history_pv_values]) if history_pv_values else 0
+        prev_pv_values1 = np.mean(history_pv_values[-1]) if len(history_pv_values) >= 1 else 0
+        prev_pv_values2 = np.mean(history_pv_values[-2]) if len(history_pv_values) >= 2 else 0
+        prev_pv_values3 = np.mean(history_pv_values[-3]) if len(history_pv_values) >= 3 else 0
+
         # 历史调控单元的出价均值
         historical_bid_mean = np.mean([np.mean(bid) for bid in history_bid]) if history_bid else 0
+        # historical_bid_min = np.min([np.mean(bid) for bid in history_bid]) if history_bid else 0
+        # historical_bid_max = np.max([np.mean(bid) for bid in history_bid]) if history_bid else 0
+        prev_bid1 = np.mean(history_bid[-1]) if len(history_bid) >= 1 else 0
+        prev_bid2 = np.mean(history_bid[-2]) if len(history_bid) >= 2 else 0
+        prev_bid3 = np.mean(history_bid[-3]) if len(history_bid) >= 3 else 0
 
         # Calculate mean of the last three ticks for different history data
         def mean_of_last_n_elements(history, n):
@@ -109,11 +139,50 @@ class IqlAgent(BaseAgent):
             else:
                 return np.mean([np.mean(data) for data in last_three_data])
 
+        def mean_of_last_elements(history, n):
+            last_data = history[max(0, n - 1):n]
+            if len(last_data) == 0:
+                return 0
+            else:
+                return np.mean([np.mean(data) for data in last_data])
+
+        # def min_of_last_n_elements(history, n):
+        #     last_three_data = history[max(0, n - 3):n]
+        #     if len(last_three_data) == 0:
+        #         return 0
+        #     else:
+        #         return np.min([np.mean(data) for data in last_three_data])
+        #
+        # def max_of_last_n_elements(history, n):
+        #     last_three_data = history[max(0, n - 3):n]
+        #     if len(last_three_data) == 0:
+        #         return 0
+        #     else:
+        #         return np.max([np.mean(data) for data in last_three_data])
+
         last_three_status_mean = mean_of_last_n_elements(history_status, tick_index)
         last_three_reward_mean = mean_of_last_n_elements(history_reward, tick_index)
         last_three_market_price_mean = mean_of_last_n_elements(history_market_price, tick_index)
         last_three_pv_values_mean = mean_of_last_n_elements(history_pv_values, tick_index)
         last_three_bid_mean = mean_of_last_n_elements(history_bid, tick_index)
+
+        # last_status_mean = mean_of_last_elements(history_status, tick_index)
+        # last_reward_mean = mean_of_last_elements(history_reward, tick_index)
+        # last_market_price_mean = mean_of_last_elements(history_market_price, tick_index)
+        # last_pv_values_mean = mean_of_last_elements(history_pv_values, tick_index)
+        # last_bid_mean = mean_of_last_elements(history_bid, tick_index)
+
+        # last_three_status_min = min_of_last_n_elements(history_status, tick_index)
+        # last_three_reward_min = min_of_last_n_elements(history_reward, tick_index)
+        # last_three_market_price_min = min_of_last_n_elements(history_market_price, tick_index)
+        # last_three_pv_values_min = min_of_last_n_elements(history_pv_values, tick_index)
+        # last_three_bid_min = min_of_last_n_elements(history_bid, tick_index)
+        #
+        # last_three_status_max = max_of_last_n_elements(history_status, tick_index)
+        # last_three_reward_max = max_of_last_n_elements(history_reward, tick_index)
+        # last_three_market_price_max = max_of_last_n_elements(history_market_price, tick_index)
+        # last_three_pv_values_max = max_of_last_n_elements(history_pv_values, tick_index)
+        # last_three_bid_max = max_of_last_n_elements(history_bid, tick_index)
 
         current_pv_values_mean = np.mean(pv_values)
         current_pv_num = len(pv_values)
@@ -124,11 +193,29 @@ class IqlAgent(BaseAgent):
 
         test_state = np.array([
             time_left, budget_left,
-            #budget_consumption_rate, cost_per_mille, prev_win_rate,
+            # budget_consumption_rate, cost_per_mille, prev_win_rate,
             historical_bid_mean, last_three_bid_mean,
             historical_market_price_mean, historical_pv_values_mean, historical_reward_mean,
             historical_status_mean, last_three_market_price_mean, last_three_pv_values_mean,
-            last_three_reward_mean, last_three_status_mean, current_pv_values_mean,
+            last_three_reward_mean, last_three_status_mean,
+            # last_bid_mean, last_market_price_mean, last_pv_values_mean,
+            # last_reward_mean, last_status_mean,
+            # prev_bid1, prev_bid2, prev_bid3,
+            # prev_market_price1, prev_market_price2, prev_market_price3,
+            # prev_pv_values1, prev_pv_values2, prev_pv_values3,
+            # prev_reward1, prev_reward2, prev_reward3,
+            # prev_status1, prev_status2, prev_status3,
+            current_pv_values_mean,
+            # historical_bid_min, last_three_bid_min,
+            # historical_market_price_min, last_three_market_price_min,
+            # historical_pv_values_min, last_three_pv_values_min,
+            # historical_reward_min, last_three_reward_min,
+            # historical_status_min, last_three_status_min,
+            # historical_bid_max, last_three_bid_max,
+            # historical_market_price_max, last_three_market_price_max,
+            # historical_pv_values_max, last_three_pv_values_max,
+            # historical_reward_max, last_three_reward_max,
+            # historical_status_max, last_three_status_max,
             current_pv_num, last_three_pv_num_total, historical_pv_num_total
         ])
 

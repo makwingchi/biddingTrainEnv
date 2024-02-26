@@ -2,6 +2,8 @@ import os
 import pickle
 import warnings
 import random
+from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 import torch
@@ -108,6 +110,13 @@ class IqlDataLoader:
             for col in ['bid', 'marketPrice', 'Reward', 'status', 'pvValue']:
                 group_agg[f'avg_{col}_all'] = group_agg[col].expanding().mean().shift(1)
                 group_agg[f'avg_{col}_last_3'] = group_agg[col].rolling(window=3, min_periods=1).mean().shift(1)
+                group_agg[f'avg_{col}_last_1'] = group_agg[col].rolling(window=1, min_periods=1).mean().shift(1)
+
+                # group_agg[f'min_{col}_all'] = group_agg[col].expanding().min().shift(1)
+                # group_agg[f'min_{col}_last_3'] = group_agg[col].rolling(window=3, min_periods=1).min().shift(1)
+
+                # group_agg[f'max_{col}_all'] = group_agg[col].expanding().max().shift(1)
+                # group_agg[f'max_{col}_last_3'] = group_agg[col].rolling(window=3, min_periods=1).max().shift(1)
 
             # 将聚合后的数据合并回原始group
             group = group.merge(group_agg, on='tick', suffixes=('', '_agg'))
@@ -116,6 +125,10 @@ class IqlDataLoader:
             for tick in group['tick'].unique():
                 current_tick_data = group[group['tick'] == tick]
                 prev_tick_data = group[group['tick'] == (tick - 1)]
+
+                prev_tick1 = group_agg[group_agg['tick'] == (tick - 1)]
+                prev_tick2 = group_agg[group_agg['tick'] == (tick - 2)]
+                prev_tick3 = group_agg[group_agg['tick'] == (tick - 3)]
 
                 # print(prev_tick_data[["episode", "tick", "agentIndex", "budget", "status"]])
                 # print(prev_tick_data.columns)
@@ -158,13 +171,21 @@ class IqlDataLoader:
                 # 从current_tick_data获取当前tick的特征
                 current_tick_data.fillna(0, inplace=True)
                 state_features = current_tick_data.iloc[0].to_dict()
+                prev_tick1.fillna(0, inplace=True)
+                prev_tick2.fillna(0, inplace=True)
+                prev_tick3.fillna(0, inplace=True)
+
+                tmp_dict = {"bid": 0, "marketPrice": 0, "pvValue": 0, "Reward": 0, "status": 0}
+                prev_features1 = prev_tick1.iloc[0].to_dict() if prev_tick1.shape[0] != 0 else deepcopy(tmp_dict)
+                prev_features2 = prev_tick2.iloc[0].to_dict() if prev_tick2.shape[0] != 0 else deepcopy(tmp_dict)
+                prev_features3 = prev_tick3.iloc[0].to_dict() if prev_tick3.shape[0] != 0 else deepcopy(tmp_dict)
                 # state(剩余时间比例，剩余预算比例，历史平均出价，前三个tick平均出价，历史平均流量价格，
                 #          历史平均流量价值，历史平均奖励，历史平均竞得概率，前三个tick平均流量价格
                 #         ，前三个tick平均流量价值，前三个tick平均奖励，前三个tick平均竞得概率，
                 #           当前tick平均流量价值，当前tick流量个数，前三个tick流量总个数，历史流量总个数)
                 state = (
                     timeleft, bgtleft,
-                    #budget_consumption_rate, cost_per_mille, prev_win_rate,
+                    # budget_consumption_rate, cost_per_mille, prev_win_rate,
                     state_features['avg_bid_all'],
                     state_features['avg_bid_last_3'],
                     state_features['avg_marketPrice_all'],
@@ -175,7 +196,47 @@ class IqlDataLoader:
                     state_features['avg_pvValue_last_3'],
                     state_features['avg_Reward_last_3'],
                     state_features['avg_status_last_3'],
+                    # state_features['avg_bid_last_1'],
+                    # state_features['avg_marketPrice_last_1'],
+                    # state_features['avg_pvValue_last_1'],
+                    # state_features['avg_Reward_last_1'],
+                    # state_features['avg_status_last_1'],
+                    # prev_features1["bid"],
+                    # prev_features2["bid"],
+                    # prev_features3["bid"],
+                    # prev_features1["marketPrice"],
+                    # prev_features2["marketPrice"],
+                    # prev_features3["marketPrice"],
+                    # prev_features1["pvValue"],
+                    # prev_features2["pvValue"],
+                    # prev_features3["pvValue"],
+                    # prev_features1["Reward"],
+                    # prev_features2["Reward"],
+                    # prev_features3["Reward"],
+                    # prev_features1["status"],
+                    # prev_features2["status"],
+                    # prev_features3["status"],
                     state_features['pvValue_agg'],
+                    # state_features['min_bid_all'],
+                    # state_features['min_bid_last_3'],
+                    # state_features['min_marketPrice_all'],
+                    # state_features['min_marketPrice_last_3'],
+                    # state_features['min_pvValue_all'],
+                    # state_features['min_pvValue_last_3'],
+                    # state_features['min_Reward_all'],
+                    # state_features['min_Reward_last_3'],
+                    # state_features['min_status_all'],
+                    # state_features['min_status_last_3'],
+                    # state_features['max_bid_all'],
+                    # state_features['max_bid_last_3'],
+                    # state_features['max_marketPrice_all'],
+                    # state_features['max_marketPrice_last_3'],
+                    # state_features['max_pvValue_all'],
+                    # state_features['max_pvValue_last_3'],
+                    # state_features['max_Reward_all'],
+                    # state_features['max_Reward_last_3'],
+                    # state_features['max_status_all'],
+                    # state_features['max_status_last_3'],
                     state_features['tick_volume_agg'],
                     state_features['last_3_ticks_volume'],
                     state_features['historical_volume']
